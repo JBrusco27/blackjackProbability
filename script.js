@@ -1,4 +1,275 @@
-  let mazoValues = {
+/////////////////////////////////// |)-[|])>- Functions -<([|]-(| /////////////////////////////////////
+
+// Creates a 0.5s cooldown
+function addCd() {
+    if (isCooldownActive) {
+        return
+    }
+
+    isCooldownActive = true
+    
+    setTimeout(() => {
+        isCooldownActive = false
+    }, 500)
+}
+
+// It takes a random card from de actual shuffle
+function takeRandomCard() {
+    return barajaActual[Math.floor(Math.random() * barajaActual.length)]
+}
+
+// Takes and displays a new card
+function askForCard(){
+
+    addCd()
+
+    let cartaRandom = takeRandomCard()
+
+    cartasUser.push(cartaRandom)
+    let card = document.createElement('div')
+    
+    card.style.backgroundImage = `url(./cartas/${cartaRandom}.png)`
+    card.id=cartaRandom
+    card.classList.add('card')
+
+    document.querySelector('.card-container').appendChild(card)
+
+    barajaActual.splice(barajaActual.indexOf(cartaRandom), 1)
+    removeShuffleCard()
+
+}
+
+// It removes the first or the second card
+function removeFirstOrSecCard(typeCard) {
+    document.querySelectorAll('.card').forEach(e => {
+        if(e.id == typeCard){
+            e.remove()
+        }
+    })
+}
+
+// It takes and display the first card
+function askForFirstCard(){
+
+    removeFirstOrSecCard(firstCard)
+    
+    firstCard = document.getElementById('first-card-select-input').value
+    cartasUser[0] = firstCard
+
+    barajaActual.splice(barajaActual.indexOf(firstCard), 1)
+
+    let card = document.createElement('div')
+    card.style.backgroundImage = `url(./cartas/${firstCard}.png)`
+    card.classList.add('card','first-card')
+    card.id=firstCard
+    document.querySelector('.card-container').appendChild(card)
+}
+
+// It takes and display the second card
+function askForSecondCard(){
+
+    removeFirstOrSecCard(secCard)
+    
+    secCard = document.getElementById('second-card-select-input').value
+    cartasUser[1] = secCard
+
+    barajaActual.splice(barajaActual.indexOf(secCard), 1)
+
+    let card = document.createElement('div')
+    card.style.backgroundImage = `url(./cartas/${secCard}.png)`
+    card.classList.add('card','second-card')
+    card.id=secCard
+    document.querySelector('.card-container').appendChild(card)
+
+}
+
+// It removes all cards except the first and second one
+function removeCards() {
+    let cards = document.querySelectorAll('.card')
+
+    cards.forEach(e => {
+        if(e.id != firstCard && e.id != secCard){
+            e.remove()
+        }
+    })
+}
+
+// It removes absolutely all cards and reset inputs focus
+function removeAllCards() {
+    let cards = document.querySelectorAll('.card')
+
+    cards.forEach(e => {
+        e.remove()
+    })
+
+    document.getElementById('first-card-select-input').selectedIndex = 0
+    document.getElementById('second-card-select-input').selectedIndex = 0
+}
+
+// It displays the won or lose screen
+function showWonLose(won) {
+    if(won){
+        document.getElementById('puntos2').textContent=userCant + ' Puntos'
+        document.querySelector('.container-carteles').style.display="flex"
+        document.querySelector('.container-carteles').style.background=" rgba(115, 255, 64, 0.497)"
+        document.querySelector('.ganaste').style.display="flex"
+        endGame()
+    }else if(!won){
+        document.getElementById('puntos').textContent=userCant + ' Puntos'
+        document.querySelector('.container-carteles').style.display="flex"
+        document.querySelector('.container-carteles').style.background="rgba(255, 64, 64, 0.497)"
+        document.querySelector('.perdiste').style.display="flex"
+        endGame()
+    }
+}
+
+// It disables 'pedir' and 'barajar' button
+function disableButtons(disable){
+    if(disable){
+        document.getElementById('pedir-input').disabled = true
+        document.getElementById('barajar-input').disabled = true
+    }else if(!disable){
+        document.getElementById('pedir-input').disabled = false
+        document.getElementById('barajar-input').disabled = false
+    }
+}
+
+// This function decides if the user win or lose
+function calculateScore(){
+
+    userCant = 0
+    
+    // The next section grab the users cards and the users cards with A (AS fr exmpl)
+    let cartasUserOrdenadas = cartasUser.filter(e => e.indexOf('A') === -1)
+    let cartasUserConA = cartasUser.filter(e => e.indexOf('A') !== -1)
+
+    // It put the letters with A at the end of the array
+    cartasUserOrdenadas = cartasUserOrdenadas.concat(cartasUserConA)
+
+    // Select the best value to cards
+    cartasUserOrdenadas.forEach(e => {
+        if(e.indexOf('A') !== -1){
+            if (userCant + mazoValues[`T${e}`][1][0] == cantToLose) {
+                userCant += mazoValues[`T${e}`][1][0]
+              } else if (userCant + mazoValues[`T${e}`][1][1] == cantToLose) {
+                userCant += mazoValues[`T${e}`][1][1]
+              } else if (userCant + mazoValues[`T${e}`][1][1] < cantToLose) {
+                userCant += mazoValues[`T${e}`][1][1]
+              } else if (userCant + mazoValues[`T${e}`][1][0] < cantToLose) {
+                userCant += mazoValues[`T${e}`][1][0]
+              } else {
+                console.log((mazoValues[`T${e}`][1][0] + userCant) < cantToLose)
+              }
+        }else{
+            userCant += mazoValues[`T${e}`][1]
+        }
+    })
+    
+    document.querySelector('.user-count').textContent = userCant
+
+    // Decides if the user win or lose
+    if(userCant == cantToLose){
+        disableButtons(true)
+        setTimeout(() => {
+            showWonLose(true)
+            disableButtons(false)
+        }, 500)
+    }else if(userCant > cantToLose){
+        disableButtons(true)
+        setTimeout(() => {
+            showWonLose(false)
+            disableButtons(false)
+        }, 500)
+    }
+}
+
+// Redefine all things to restart the game
+function resetGame(){
+
+    removeAllCards()
+ 
+    cartasUser = []
+    userCant = 0
+
+    barajaActual = [
+        "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC", "AC",
+        "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD", "AD",
+        "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH", "AH",
+        "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS", "AS"
+    ]
+
+    calculateScore()
+    showShuffle()
+}
+
+// prepares the game to start another
+function endGame(){
+
+    let valorCarta1 = document.querySelector('.first-card').id
+    let valorCarta2 = document.querySelector('.second-card').id
+
+    removeCards()
+    cartasUser = []
+    cartasUser[0] = valorCarta1
+    cartasUser[1] = valorCarta2
+    userCant = 0
+    calculateScore()
+}
+
+// Removes the inputs values 
+function removeInputValues(){
+
+    function dontRemove(e) {
+        if(e.value != 'dontremove'){
+            e.remove()
+        }
+    }
+
+    Array.from(document.getElementById('first-card-select-input').childNodes).forEach(e => {
+        dontRemove(e)
+    })
+    Array.from(document.getElementById('second-card-select-input').childNodes).forEach(e => {
+        dontRemove(e)
+    })
+}
+
+// It fills the inputs values with the actual shuffle cards
+function fillInputValues(){
+
+    barajaActual.forEach(e => {
+
+        let op = document.createElement('option')
+        let op2 = document.createElement('option')
+
+        op.value = e
+        op2.value = e
+
+        op.textContent = mazoValues[`T${e}`][0]
+        op2.textContent = mazoValues[`T${e}`][0]
+
+        document.getElementById('first-card-select-input').appendChild(op)
+        document.getElementById('second-card-select-input').appendChild(op2)
+
+    })
+
+}
+
+/////////////////////////////////// |)-[|])>- Functions -<([|]-(| /////////////////////////////////////
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+/////////////////////////////////// |)-[|])>- Inizialiting game -<([|]-(| /////////////////////////////////////
+
+let barajaActual = [
+    "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC", "AC",
+    "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD", "AD",
+    "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH", "AH",
+    "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS", "AS"
+]
+
+let mazoValues = {
     "T2C": ["2 de Tréboles", 2],
     "T3C": ["3 de Tréboles", 3],
     "T4C": ["4 de Tréboles", 4],
@@ -51,337 +322,119 @@
     "TQS": ["Reina de Picas", 10],
     "TKS": ["Rey de Picas", 10],
     "TAS": ["As de Picas", [1,11]]
-  }
-
+    }
+    
 let firstCard
 let secCard
-
-let isCooldownActive = false;
-
-function addCd() {
-    if (isCooldownActive) {
-        return;
-    }
-
-    isCooldownActive = true;  
-    
-    setTimeout(() => {
-        isCooldownActive = false;
-    }, 500);
-}
-
-function cartaRandomFunc() {
-    return barajaActual[Math.floor(Math.random() * barajaActual.length)]
-}
-
-function askForCard(){
-
-    addCd()
-
-    // Se guarda una carta random del mazo
-    let cartaRandom = cartaRandomFunc()
-
-    cartasUser.push(cartaRandom)
-    let card = document.createElement('div')
-    
-    card.style.backgroundImage = `url(./cartas/${cartaRandom}.png)`
-    card.id=cartaRandom
-    card.classList.add('card')
-
-    document.querySelector('.card-container').appendChild(card)
-
-    barajaActual.splice(barajaActual.indexOf(cartaRandom), 1)
-    eliminarCartaVisualBaraja()
-
-}
-
-function removeRandomCards(typeCard) {
-    document.querySelectorAll('.card').forEach(e => {
-        if(e.id == typeCard){
-            e.remove()
-        }
-    })
-}
-
-function askForFirstCard(){
-
-    removeRandomCards(firstCard)
-    
-    firstCard = document.getElementById('first-card-select-input').value
-    cartasUser[0] = firstCard
-
-    barajaActual.splice(barajaActual.indexOf(firstCard), 1)
-
-    let card = document.createElement('div')
-    card.style.backgroundImage = `url(./cartas/${firstCard}.png)`
-    card.classList.add('card','first-card')
-    card.id=firstCard
-    document.querySelector('.card-container').appendChild(card)
-}
-
-function askForSecondCard(){
-
-    removeRandomCards(secCard)
-    
-    secCard = document.getElementById('second-card-select-input').value
-    console.log('ada:' + secCard)
-    cartasUser[1] = secCard
-
-    barajaActual.splice(barajaActual.indexOf(secCard), 1)
-
-    let card = document.createElement('div')
-    card.style.backgroundImage = `url(./cartas/${secCard}.png)`
-    card.classList.add('card','second-card')
-    card.id=secCard
-    document.querySelector('.card-container').appendChild(card)
-
-}
-
-function removeCards() {
-    let cards = document.querySelectorAll('.card')
-
-    cards.forEach(e => {
-        if(e.id != firstCard && e.id != secCard){
-            e.remove()
-        }
-    })
-}
-
-function removeAllCards() {
-    let cards = document.querySelectorAll('.card')
-
-    cards.forEach(e => {
-        e.remove()
-    })
-
-    document.getElementById('first-card-select-input').selectedIndex = 0
-    document.getElementById('second-card-select-input').selectedIndex = 0
-}
-
-function sumarPuntajeUser(){
-    userCant = 0
-    
-    
-    let cartasUserOrdenadas = cartasUser.filter(e => e.indexOf('A') === -1); // Cartas sin 'A'
-    let cartasUserConA = cartasUser.filter(e => e.indexOf('A') !== -1); // Cartas con 'A'
-
-    cartasUserOrdenadas = cartasUserOrdenadas.concat(cartasUserConA); // Concatenar ambos arrays
-
-    console.log(cartasUserOrdenadas);
-
-    cartasUserOrdenadas.forEach(e => {
-        if(e.indexOf('A') !== -1){
-            if (userCant + mazoValues[`T${e}`][1][0] == cantToLose) {
-                userCant += mazoValues[`T${e}`][1][0];
-              } else if (userCant + mazoValues[`T${e}`][1][1] == cantToLose) {
-                userCant += mazoValues[`T${e}`][1][1];
-              } else if (userCant + mazoValues[`T${e}`][1][1] < cantToLose) {
-                userCant += mazoValues[`T${e}`][1][1];
-              } else if (userCant + mazoValues[`T${e}`][1][0] < cantToLose) {
-                userCant += mazoValues[`T${e}`][1][0];
-              } else {
-                console.log((mazoValues[`T${e}`][1][0] + userCant) < cantToLose);
-              }
-              
-            // if(userCant + mazoValues[`T${e}`][1][0] == cantToLose){
-            //     userCant += mazoValues[`T${e}`][1][0]
-            // }else if(userCant + mazoValues[`T${e}`][1][1] <= cantToLose){
-            //     userCant += mazoValues[`T${e}`][1][1]
-            // }else if(userCant + mazoValues[`T${e}`][1][1] > cantToLose && userCant + mazoValues[`T${e}`][1][0] < cantToLose){
-            //     userCant += mazoValues[`T${e}`][1][0]
-            // }
-        }else{
-            userCant += mazoValues[`T${e}`][1]
-        }
-
-
-    })
-    
-    document.querySelector('.user-count').textContent = userCant
-
-
-    if(userCant == cantToLose){
-        document.getElementById('pedir-input').disabled = true
-        document.getElementById('barajar-input').disabled = true
-        setTimeout(() => {
-            
-            document.getElementById('puntos2').textContent=userCant + ' Puntos'
-            document.querySelector('.container-carteles').style.display="flex"
-            document.querySelector('.container-carteles').style.background=" rgba(115, 255, 64, 0.497)"
-            document.querySelector('.ganaste').style.display="flex"
-            endGame()
-            document.getElementById('pedir-input').disabled = false
-            document.getElementById('barajar-input').disabled = false
-        }, 500);        
-    }else if(userCant > cantToLose){
-        document.getElementById('pedir-input').disabled = true
-        document.getElementById('barajar-input').disabled = true    
-        setTimeout(() => {
-            document.getElementById('puntos').textContent=userCant + ' Puntos'
-            document.querySelector('.container-carteles').style.display="flex"
-            document.querySelector('.container-carteles').style.background="rgba(255, 64, 64, 0.497)"
-            document.querySelector('.perdiste').style.display="flex"
-            endGame()
-            document.getElementById('pedir-input').disabled = false
-            document.getElementById('barajar-input').disabled = false
-        }, 500);
-    }
-}
-
-function resetGame(){
-
-
-    removeAllCards()
- 
-    cartasUser = []
-    userCant = 0
-    barajaActual = [
-        "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC", "AC",
-        "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD", "AD",
-        "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH", "AH",
-        "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS", "AS"
-    ]
-
-    sumarPuntajeUser()
-    mostrarBaraja()
-}
-
-function endGame(){
-
-    let valorCarta1 = document.querySelector('.first-card').id
-    let valorCarta2 = document.querySelector('.second-card').id
-
-    removeCards()
-    cartasUser = []
-    cartasUser[0] = valorCarta1
-    cartasUser[1] = valorCarta2
-    userCant = 0
-    sumarPuntajeUser()
-}
-
-function rellenarInputs(){
-
-    Array.from(document.getElementById('first-card-select-input').childNodes).forEach(e => {
-        if(e.value != 'dontremove'){
-            e.remove()
-        }
-    });
-    Array.from(document.getElementById('second-card-select-input').childNodes).forEach(e => {
-        if(e.value != 'dontremove'){
-            e.remove()
-        }
-    });
-
-    
-    barajaActual.forEach(e => {
-        op = document.createElement('option')
-        op.value = e
-        op.textContent = mazoValues[`T${e}`][0]
-        document.getElementById('first-card-select-input').appendChild(op)
-
-        op2 = document.createElement('option')
-        op2.value = e
-        op2.textContent = mazoValues[`T${e}`][0]
-        document.getElementById('second-card-select-input').appendChild(op2)
-    });
-
-}
-
-// LOGICA DEL JUEGO
-
-
-let barajaActual = [
-    "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC", "AC",
-    "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD", "AD",
-    "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH", "AH",
-    "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS", "AS"
-]
+let isCooldownActive = false
 
 let cartasUser = []
-
 let userCant = 0
 let cantToLose = 21
-rellenarInputs()
+fillInputValues()
+showShuffle()
 
+/////////////////////////////////// |)-[|])>- Inizialiting game -<([|]-(| /////////////////////////////////////
 
-    document.getElementById('first-card-select-input').addEventListener('input', ()=>{
-        if(barajaActual.length != 0){
-            removeCards()
-            askForFirstCard()
-            sumarPuntajeUser()
-            eliminarCartaVisualBaraja()
-            rellenarInputs()
-        }else{
-            alert('Te quedaste sin cartas!')
-        }
-    })
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
 
-    document.getElementById('second-card-select-input').addEventListener('input', ()=>{
-        if(barajaActual.length != 0){
-            removeCards()
-            askForSecondCard()
-            sumarPuntajeUser()
-            eliminarCartaVisualBaraja()
-            rellenarInputs()
-        }else{
-            alert('Te quedaste sin cartas!')
-        }
-    })
+/////////////////////////////////// |)-[|])>- Inputs section -<([|]-(| /////////////////////////////////////
 
-    document.getElementById('pedir-input').addEventListener('click', ()=>{
-        if(barajaActual.length != 0){
-            if(document.querySelector('.first-card') && document.querySelector('.second-card')){
-                askForCard()
-                sumarPuntajeUser()
-                rellenarInputs()
-            }
-        }else{
-            alert('Te quedaste sin cartas!')
-        }
-    })
+// Function to start game when selecting inputs
+function selectingInput(firstSec) {
+    removeCards()
 
-    document.getElementById('barajar-input').addEventListener('click', ()=>{
-        resetGame()
-        rellenarInputs()
-    })
-
-
-    // MOSTRAR BARAJA EN EL JUEGO
-
-    function mostrarBaraja(){
-        
-        if(document.querySelector('.card-backside')){
-            document.querySelectorAll('.card-backside').forEach(element => {
-                element.remove()
-            });
-        }
-        
-        
-        for (let e = 0; e < barajaActual.length; e++) {
-            let carta = document.createElement('div')
-            carta.classList.add('card-backside')
-            carta.style.transform = `perspective(500px) rotateX(5deg) translateY(-${e*(e/30)}px) rotateZ(110deg)`
-            document.querySelector('.card-backside-container').appendChild(carta)
-        }
-
+    if(firstSec){
+        askForFirstCard()
+    }else if(!firstSec){
+        askForSecondCard()
     }
 
-    mostrarBaraja()
+    calculateScore()
+    removeShuffleCard()
+    removeInputValues()
+    fillInputValues()
+}
 
-    function eliminarCartaVisualBaraja(){
-        document.querySelector('.card-backside-container').lastElementChild.style.transform = `translateY(-100vh)`
-        setTimeout(() => {
-            document.querySelector('.card-backside-container').lastElementChild.remove()
-        }, 300);
+// Starting game when selecting inputs
+document.getElementById('first-card-select-input').addEventListener('input', ()=>{ barajaActual.length != 0 ? selectingInput(true) :  alert('Te quedaste sin cartas!') })
+document.getElementById('second-card-select-input').addEventListener('input', ()=>{ barajaActual.length != 0 ? selectingInput(false) :  alert('Te quedaste sin cartas!') })
+
+// Asking for a card and doing some weird things xd
+document.getElementById('pedir-input').addEventListener('click', ()=>{
+    if(barajaActual.length != 0){ // User have any cards left?
+        if(document.querySelector('.first-card') && document.querySelector('.second-card')){ // Only give user a card if it has first and second card 
+            askForCard()
+            calculateScore()
+            fillInputValues()
+        }
+    }else{
+        alert('Te quedaste sin cartas!')
+    }
+})
+
+// Shuffling cards reset the game
+document.getElementById('barajar-input').addEventListener('click', ()=>{
+    resetGame()
+    fillInputValues()
+})
+
+// Hiding lose alert 
+document.getElementById('perdio-btn').addEventListener('click', ()=>{
+    document.querySelector('.container-carteles').style.display="none"
+    document.querySelector('.perdiste').style.display="none"
+})
+
+// Hiding win panel 
+document.getElementById('gano-btn').addEventListener('click', ()=>{
+    document.querySelector('.container-carteles').style.display="none"
+    document.querySelector('.ganaste').style.display="none"
+
+})
+
+/////////////////////////////////// |)-[|])>- Inputs section -<([|]-(| /////////////////////////////////////
+
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+// // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
+
+/////////////////////////////////// |)-[|])>- Card Shuffle section -<([|]-(| /////////////////////////////////////
+
+
+//Remove card shuffle
+function removeShuffle(){
+    if(document.querySelector('.card-backside')){
+        document.querySelectorAll('.card-backside').forEach(element => {
+            element.remove()
+        })
+    }
+}
+
+// Shows the user cards left
+function showShuffle(){
+
+    removeShuffle()
+
+    for (let e = 0; e < barajaActual.length; e++) {
+
+        let carta = document.createElement('div')
+
+        carta.classList.add('card-backside')
+        carta.style.transform = `perspective(500px) rotateX(15deg) translateY(-${e*(e/20)}px) rotateZ(90deg)`
+
+        document.querySelector('.card-backside-container').appendChild(carta)
     }
 
-    document.getElementById('perdio-btn').addEventListener('click', ()=>{
-        document.querySelector('.container-carteles').style.display="none"
-        document.querySelector('.perdiste').style.display="none"
-    })
+}
 
-    document.getElementById('gano-btn').addEventListener('click', ()=>{
-        document.querySelector('.container-carteles').style.display="none"
-        document.querySelector('.ganaste').style.display="none"
+// Removes the first card from the suffle
+function removeShuffleCard(){
+    document.querySelector('.card-backside-container').lastElementChild.style.transform = `translateY(-100vh)`
+    setTimeout(() => {
+        document.querySelector('.card-backside-container').lastElementChild.remove()
+    }, 300)
+}
 
-    })
+/////////////////////////////////// |)-[|])>- Card Shuffle section -<([|]-(| /////////////////////////////////////
