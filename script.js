@@ -83,6 +83,11 @@ function askForSecondCard(){
 
 }
 
+function setSelectedInputTo0() {
+    document.getElementById('first-card-select-input').selectedIndex = 0
+    document.getElementById('second-card-select-input').selectedIndex = 0
+}
+
 // It removes all cards except the first and second one
 function removeCards() {
     let cards = document.querySelectorAll('.card')
@@ -102,8 +107,6 @@ function removeAllCards() {
         e.remove()
     })
 
-    document.getElementById('first-card-select-input').selectedIndex = 0
-    document.getElementById('second-card-select-input').selectedIndex = 0
 }
 
 // It displays the won or lose screen
@@ -191,15 +194,12 @@ function resetGame(){
     cartasUser = []
     userCant = 0
 
-    barajaActual = [
-        "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC", "AC",
-        "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD", "AD",
-        "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH", "AH",
-        "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS", "AS"
-    ]
+    changeCantBarajas()
 
     calculateScore()
     showShuffle()
+    removeInputValues()
+    fillInputValues()
 }
 
 // prepares the game to start another
@@ -214,6 +214,7 @@ function endGame(){
     cartasUser[1] = valorCarta2
     userCant = 0
     calculateScore()
+    posibilidad()
 }
 
 // Removes the inputs values 
@@ -231,6 +232,8 @@ function removeInputValues(){
     Array.from(document.getElementById('second-card-select-input').childNodes).forEach(e => {
         dontRemove(e)
     })
+
+    setSelectedInputTo0()
 }
 
 // It fills the inputs values with the actual shuffle cards
@@ -252,6 +255,44 @@ function fillInputValues(){
 
     })
 
+    setSelectedInputTo0()
+}
+
+function changeCantBarajas(){
+
+    let cantBarajas = parseInt(document.getElementById('cant-baraja-select-input').value)
+    console.log(cantBarajas)
+    switch (cantBarajas) {
+        case 1:
+            barajaActual = [
+                ...barajaActualOne
+            ]
+            break;
+        case 2:
+            barajaActual = [
+                ...barajaActualOne,
+                ...barajaActualOne,
+            ]
+            break;
+        case 3:
+            barajaActual = [
+                ...barajaActualOne,
+                ...barajaActualOne,
+                ...barajaActualOne,
+            ]
+            break;
+        case 4:
+            barajaActual = [
+                ...barajaActualOne,
+                ...barajaActualOne,
+                ...barajaActualOne,
+                ...barajaActualOne,
+            ]
+            break; 
+        default:
+            break;
+    }
+
 }
 
 /////////////////////////////////// |)-[|])>- Functions -<([|]-(| /////////////////////////////////////
@@ -262,12 +303,15 @@ function fillInputValues(){
 
 /////////////////////////////////// |)-[|])>- Inizialiting game -<([|]-(| /////////////////////////////////////
 
-let barajaActual = [
+let barajaActualOne = [
     "2C", "3C", "4C", "5C", "6C", "7C", "8C", "9C", "10C", "JC", "QC", "KC", "AC",
     "2D", "3D", "4D", "5D", "6D", "7D", "8D", "9D", "10D", "JD", "QD", "KD", "AD",
     "2H", "3H", "4H", "5H", "6H", "7H", "8H", "9H", "10H", "JH", "QH", "KH", "AH",
     "2S", "3S", "4S", "5S", "6S", "7S", "8S", "9S", "10S", "JS", "QS", "KS", "AS"
 ]
+
+let barajaActual = []
+changeCantBarajas()
 
 let mazoValues = {
     "T2C": ["2 de Tréboles", 2],
@@ -356,11 +400,16 @@ function selectingInput(firstSec) {
     removeShuffleCard()
     removeInputValues()
     fillInputValues()
+    posibilidad()
 }
 
 // Starting game when selecting inputs
 document.getElementById('first-card-select-input').addEventListener('input', ()=>{ barajaActual.length != 0 ? selectingInput(true) :  alert('Te quedaste sin cartas!') })
 document.getElementById('second-card-select-input').addEventListener('input', ()=>{ barajaActual.length != 0 ? selectingInput(false) :  alert('Te quedaste sin cartas!') })
+document.getElementById('cant-baraja-select-input').addEventListener('input', ()=>{
+    changeCantBarajas()
+    resetGame()
+})
 
 // Asking for a card and doing some weird things xd
 document.getElementById('pedir-input').addEventListener('click', ()=>{
@@ -369,6 +418,7 @@ document.getElementById('pedir-input').addEventListener('click', ()=>{
             askForCard()
             calculateScore()
             fillInputValues()
+            posibilidad()
         }
     }else{
         alert('Te quedaste sin cartas!')
@@ -422,7 +472,7 @@ function showShuffle(){
         let carta = document.createElement('div')
 
         carta.classList.add('card-backside')
-        carta.style.transform = `perspective(500px) rotateX(15deg) translateY(-${e*(e/20)}px) rotateZ(90deg)`
+        carta.style.transform = ` rotateX(40deg) translateY(-${e*(e/20)}px) rotateZ(90deg)`
 
         document.querySelector('.card-backside-container').appendChild(carta)
     }
@@ -438,3 +488,105 @@ function removeShuffleCard(){
 }
 
 /////////////////////////////////// |)-[|])>- Card Shuffle section -<([|]-(| /////////////////////////////////////
+
+function posibilidad() {
+    
+    if(barajaActual.length > 0){
+        
+        let ganadas = 0
+        let perdidas = 0
+        let quedadas = 0
+        
+        let cantToIterate = 1000;
+        let pusercant = 0
+
+    // The next section grab the users cards and the users cards with A (AS fr exmpl)
+    let cartasUserOrdenadas = cartasUser.filter(e => e.indexOf('A') === -1)
+    let cartasUserConA = cartasUser.filter(e => e.indexOf('A') !== -1)
+    
+    // It put the letters with A at the end of the array
+    cartasUserOrdenadas = cartasUserOrdenadas.concat(cartasUserConA)
+    
+    // Select the best value to cards
+    cartasUserOrdenadas.forEach(e => {
+        if(e.indexOf('A') !== -1){
+            if (pusercant + mazoValues[`T${e}`][1][0] == cantToLose) {
+                pusercant += mazoValues[`T${e}`][1][0]
+            } else if (pusercant + mazoValues[`T${e}`][1][1] == cantToLose) {
+                pusercant += mazoValues[`T${e}`][1][1]
+              } else if (pusercant + mazoValues[`T${e}`][1][1] < cantToLose) {
+                  pusercant += mazoValues[`T${e}`][1][1]
+              } else if (pusercant + mazoValues[`T${e}`][1][0] < cantToLose) {
+                pusercant += mazoValues[`T${e}`][1][0]
+            } else {
+                console.log((mazoValues[`T${e}`][1][0] + pusercant) < cantToLose)
+              }
+            }else{
+                pusercant += mazoValues[`T${e}`][1]
+            }
+        })
+        
+        
+        let cartaRandVal
+        
+        
+        for (let e = 0; e < cantToIterate; e++) {
+            
+            cartaRandVal = takeRandomCard()
+        
+        if(cartaRandVal.indexOf('A') !== -1){
+            if (pusercant + mazoValues[`T${cartaRandVal}`][1][0] == cantToLose) {
+                ganadas += 1
+                console.log('gano: ' + cartaRandVal)
+            } else if (pusercant + mazoValues[`T${cartaRandVal}`][1][1] == cantToLose) {
+                ganadas += 1
+                console.log('gano: ' + cartaRandVal)
+            } else if (pusercant + mazoValues[`T${cartaRandVal}`][1][1] < cantToLose) {
+                quedadas += 1
+                console.log('quedo: ' + cartaRandVal)
+            } else if (pusercant + mazoValues[`T${cartaRandVal}`][1][0] < cantToLose) {
+                quedadas += 1
+                console.log('quedo: ' + cartaRandVal)
+            } else {
+                perdidas += 1
+                console.log('perdio: ' + cartaRandVal)
+            }
+        }else{
+            if(pusercant + mazoValues[`T${cartaRandVal}`][1] > cantToLose){
+                perdidas += 1
+                console.log('perdio: ' + cartaRandVal)
+            }else if(pusercant + mazoValues[`T${cartaRandVal}`][1] < cantToLose){
+                quedadas += 1
+                console.log('quedo: ' + cartaRandVal)
+            }else if(pusercant + mazoValues[`T${cartaRandVal}`][1] == cantToLose){
+                ganadas += 1
+                console.log('gano: ' + cartaRandVal)
+            }
+        }
+        
+        
+        
+    }
+
+    let porcGan = Math.floor((ganadas / cantToIterate) * 100)
+    let porcPer = Math.floor((perdidas / cantToIterate) * 100)
+    let porcQue = Math.floor((quedadas / cantToIterate) * 100)
+    
+    document.querySelector('.ganar').textContent = 'Ganar:'+porcGan +  '%'
+    document.querySelector('.perder').textContent = 'Perder:'+porcPer +  '%'
+    document.querySelector('.quedarse').textContent = 'Quedarse:'+porcQue + '%'
+    
+    console.log('--------------')
+    console.log('--------------')
+    console.log('--------------')
+    console.log('GANO - ' + ganadas)
+    console.log('--------------')
+    console.log('PERDIO - ' + perdidas)
+    console.log('--------------')
+    console.log('QUEDO - ' + quedadas)
+    console.log('--------------')
+    
+}
+    
+}
+

@@ -9,6 +9,11 @@
 </head>
 <body>
     <div class="container">
+        <div class="posibilidad">
+            <div class="ganar">Ganar: 0%</div>
+            <div class="perder">Perder: 0%</div>
+            <div class="quedarse">Seguir: 0%</div>
+        </div>
         <div class="container-carteles">
             <div class="perdiste">
                 <h1 id="gano-perdio">Perdiste!</h1>
@@ -26,10 +31,6 @@
         </div>
         <div class="user-count">0</div>
         <div class="card-container">
-            <!-- <div class="card">
-            </div>
-            <div class="card">
-            </div> -->
         </div>
         <nav>
             <div class="nav-group">
@@ -39,6 +40,14 @@
                 
                 <select name="second-card-select" class="card-select-input" id="second-card-select-input">
                     <option disabled hidden selected value="dontremove">CARD 2</option>
+                </select>
+                
+                <select name="cant-baraja-selec" class="card-select-input" id="cant-baraja-select-input">
+                    <option disabled hidden selected value="1">CANT. BARAJAS</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
                 </select>
                 
                 <input type="button" value="PEDIR" class="card-select-input" id="pedir-input">
