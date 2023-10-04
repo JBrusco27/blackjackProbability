@@ -19,11 +19,15 @@ function takeRandomCard() {
 }
 
 // Takes and displays a new card
-function askForCard(){
+function askForCard(restoringGame,restoringCard){
 
     addCd()
-
-    let cartaRandom = takeRandomCard()
+    let cartaRandom
+    if(restoringGame){
+        cartaRandom = restoringCard
+    }else if(!restoringGame){
+        cartaRandom = takeRandomCard()
+    }
 
     cartasUser.push(cartaRandom)
     let card = document.createElement('div')
@@ -49,11 +53,16 @@ function removeFirstOrSecCard(typeCard) {
 }
 
 // It takes and display the first card
-function askForFirstCard(){
+function askForFirstCard(restoringGame,restoringCard){
 
     removeFirstOrSecCard(firstCard)
     
-    firstCard = document.getElementById('first-card-select-input').value
+    if(restoringGame){
+        firstCard = restoringCard
+    }else if(!restoringGame){
+        firstCard = document.getElementById('first-card-select-input').value
+    }
+
     cartasUser[0] = firstCard
 
     barajaActual.splice(barajaActual.indexOf(firstCard), 1)
@@ -66,11 +75,16 @@ function askForFirstCard(){
 }
 
 // It takes and display the second card
-function askForSecondCard(){
+function askForSecondCard(restoringGame,restoringCard){
 
     removeFirstOrSecCard(secCard)
     
-    secCard = document.getElementById('second-card-select-input').value
+    if(restoringGame){
+        secCard = restoringCard
+    }else if(!restoringGame){
+        secCard = document.getElementById('second-card-select-input').value
+    }
+
     cartasUser[1] = secCard
 
     barajaActual.splice(barajaActual.indexOf(secCard), 1)
@@ -111,6 +125,26 @@ function removeAllCards() {
 
 // It displays the won or lose screen
 function showWonLose(won) {
+    let card;
+
+
+    Array.from(document.querySelector('.ganaste-cards').children).forEach(function(hijo) {
+        document.querySelector('.ganaste-cards').removeChild(hijo);
+    });
+    Array.from(document.querySelector('.perdiste-cards').children).forEach(function(hijo) {
+        document.querySelector('.perdiste-cards').removeChild(hijo);
+    });
+
+    cartasUser.forEach(element => {
+        card = document.createElement('div')
+        card.style.backgroundImage = `url(./cartas/${element}.png)`
+        card.classList.add('card-s')
+        if(won){
+            document.querySelector('.ganaste-cards').appendChild(card)
+        }else{
+            document.querySelector('.perdiste-cards').appendChild(card)
+        }
+    });
     if(won){
         document.getElementById('puntos2').textContent=userCant + ' Puntos'
         document.querySelector('.container-carteles').style.display="flex"
@@ -193,13 +227,15 @@ function resetGame(){
  
     cartasUser = []
     userCant = 0
+    firstCard = null
+    secCard = null
 
     changeCantBarajas()
-
     calculateScore()
     showShuffle()
     removeInputValues()
     fillInputValues()
+
 }
 
 // prepares the game to start another
@@ -260,7 +296,7 @@ function fillInputValues(){
 
 function changeCantBarajas(){
 
-    let cantBarajas = parseInt(document.getElementById('cant-baraja-select-input').value)
+    let cantBarajas = cantBaraj
     console.log(cantBarajas)
     switch (cantBarajas) {
         case 1:
@@ -295,6 +331,77 @@ function changeCantBarajas(){
 
 }
 
+function sendData() {
+
+
+    let saveCartasUser = []
+
+    for (let e = 2; e < cartasUser.length; e++) {
+        saveCartasUser.push(cartasUser[e])
+    }
+
+    let formData = new FormData()
+    formData.append('firstCard', firstCard)
+    formData.append('secCard', secCard)
+    formData.append('cards', saveCartasUser)
+    formData.append('cantBaraj', cantBaraj)
+
+    let options = {
+        method:'POST',
+        body:formData
+    }
+
+    fetch('./backend/saveData.php',  options)
+    .then((response)=>{
+        if(response.ok){
+            return response.json()
+        }
+    })
+    .then((data)=>{
+        console.log(data)
+    })
+    
+}
+
+
+function restoreGame() {
+
+    fetch('./backend/restoreGame.php')
+    .then((response)=>{
+        if(response.ok){
+            return response.json()
+        }
+    })
+    .then((data)=>{
+        cantBaraj = data.cant_baraja
+        console.log(cantBaraj)
+        changeCantBarajas()
+        showShuffle()
+        data.primera_carta != 'null' ? askForFirstCard(true,data.primera_carta) : false
+        data.segunda_carta != 'null' ? askForSecondCard(true,data.segunda_carta) : false
+
+        calculateScore()
+        removeShuffleCard()
+        removeInputValues()
+        fillInputValues()
+        posibilidad()
+
+        data.cartas.forEach(e => {    
+            if(document.querySelector('.first-card') && document.querySelector('.second-card')){ // Only give user a card if it has first and second card 
+                askForCard(true, e)
+                calculateScore()
+                fillInputValues()
+                posibilidad()
+            }
+        });
+    })
+    .catch((err)=>{
+        console.error(err);
+    })
+
+
+}
+
 /////////////////////////////////// |)-[|])>- Functions -<([|]-(| /////////////////////////////////////
 
 // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // // //
@@ -311,7 +418,6 @@ let barajaActualOne = [
 ]
 
 let barajaActual = []
-changeCantBarajas()
 
 let mazoValues = {
     "T2C": ["2 de Tréboles", 2],
@@ -368,15 +474,21 @@ let mazoValues = {
     "TAS": ["As de Picas", [1,11]]
     }
     
-let firstCard
-let secCard
+let firstCard = null
+let secCard  = null
 let isCooldownActive = false
 
 let cartasUser = []
 let userCant = 0
 let cantToLose = 21
+let cantBaraj = 1
+changeCantBarajas()
 fillInputValues()
 showShuffle()
+
+document.addEventListener('DOMContentLoaded',()=>{
+    restoreGame()
+})
 
 /////////////////////////////////// |)-[|])>- Inizialiting game -<([|]-(| /////////////////////////////////////
 
@@ -391,9 +503,9 @@ function selectingInput(firstSec) {
     removeCards()
 
     if(firstSec){
-        askForFirstCard()
+        askForFirstCard(false)
     }else if(!firstSec){
-        askForSecondCard()
+        askForSecondCard(false)
     }
 
     calculateScore()
@@ -401,13 +513,15 @@ function selectingInput(firstSec) {
     removeInputValues()
     fillInputValues()
     posibilidad()
+    sendData()
 }
 
 // Starting game when selecting inputs
 document.getElementById('first-card-select-input').addEventListener('input', ()=>{ barajaActual.length != 0 ? selectingInput(true) :  alert('Te quedaste sin cartas!') })
 document.getElementById('second-card-select-input').addEventListener('input', ()=>{ barajaActual.length != 0 ? selectingInput(false) :  alert('Te quedaste sin cartas!') })
 document.getElementById('cant-baraja-select-input').addEventListener('input', ()=>{
-    changeCantBarajas()
+    cantBaraj = parseInt(document.getElementById('cant-baraja-select-input').value)
+    sendData()
     resetGame()
 })
 
@@ -415,10 +529,11 @@ document.getElementById('cant-baraja-select-input').addEventListener('input', ()
 document.getElementById('pedir-input').addEventListener('click', ()=>{
     if(barajaActual.length != 0){ // User have any cards left?
         if(document.querySelector('.first-card') && document.querySelector('.second-card')){ // Only give user a card if it has first and second card 
-            askForCard()
+            askForCard(false)
             calculateScore()
             fillInputValues()
             posibilidad()
+            sendData()
         }
     }else{
         alert('Te quedaste sin cartas!')
@@ -428,20 +543,21 @@ document.getElementById('pedir-input').addEventListener('click', ()=>{
 // Shuffling cards reset the game
 document.getElementById('barajar-input').addEventListener('click', ()=>{
     resetGame()
-    fillInputValues()
+    sendData()
 })
 
 // Hiding lose alert 
 document.getElementById('perdio-btn').addEventListener('click', ()=>{
     document.querySelector('.container-carteles').style.display="none"
     document.querySelector('.perdiste').style.display="none"
+    sendData()
 })
 
 // Hiding win panel 
 document.getElementById('gano-btn').addEventListener('click', ()=>{
     document.querySelector('.container-carteles').style.display="none"
     document.querySelector('.ganaste').style.display="none"
-
+    sendData()
 })
 
 /////////////////////////////////// |)-[|])>- Inputs section -<([|]-(| /////////////////////////////////////
@@ -521,9 +637,9 @@ function posibilidad() {
             } else {
                 console.log((mazoValues[`T${e}`][1][0] + pusercant) < cantToLose)
               }
-            }else{
-                pusercant += mazoValues[`T${e}`][1]
-            }
+        }else{
+            pusercant += mazoValues[`T${e}`][1]
+        }
         })
         
         
@@ -537,30 +653,22 @@ function posibilidad() {
         if(cartaRandVal.indexOf('A') !== -1){
             if (pusercant + mazoValues[`T${cartaRandVal}`][1][0] == cantToLose) {
                 ganadas += 1
-                console.log('gano: ' + cartaRandVal)
             } else if (pusercant + mazoValues[`T${cartaRandVal}`][1][1] == cantToLose) {
                 ganadas += 1
-                console.log('gano: ' + cartaRandVal)
             } else if (pusercant + mazoValues[`T${cartaRandVal}`][1][1] < cantToLose) {
                 quedadas += 1
-                console.log('quedo: ' + cartaRandVal)
             } else if (pusercant + mazoValues[`T${cartaRandVal}`][1][0] < cantToLose) {
                 quedadas += 1
-                console.log('quedo: ' + cartaRandVal)
             } else {
                 perdidas += 1
-                console.log('perdio: ' + cartaRandVal)
             }
         }else{
             if(pusercant + mazoValues[`T${cartaRandVal}`][1] > cantToLose){
                 perdidas += 1
-                console.log('perdio: ' + cartaRandVal)
             }else if(pusercant + mazoValues[`T${cartaRandVal}`][1] < cantToLose){
                 quedadas += 1
-                console.log('quedo: ' + cartaRandVal)
             }else if(pusercant + mazoValues[`T${cartaRandVal}`][1] == cantToLose){
                 ganadas += 1
-                console.log('gano: ' + cartaRandVal)
             }
         }
         
@@ -575,16 +683,6 @@ function posibilidad() {
     document.querySelector('.ganar').textContent = 'Ganar:'+porcGan +  '%'
     document.querySelector('.perder').textContent = 'Perder:'+porcPer +  '%'
     document.querySelector('.quedarse').textContent = 'Quedarse:'+porcQue + '%'
-    
-    console.log('--------------')
-    console.log('--------------')
-    console.log('--------------')
-    console.log('GANO - ' + ganadas)
-    console.log('--------------')
-    console.log('PERDIO - ' + perdidas)
-    console.log('--------------')
-    console.log('QUEDO - ' + quedadas)
-    console.log('--------------')
     
 }
     
